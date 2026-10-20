@@ -1,11 +1,13 @@
 ---
 name: vps-proxy-workflow
-description: 从拿到 VPS 的 IP、SSH 端口和 root 密码开始，建立专用 SSH 密钥、部署私有 REALITY 节点、生成 Clash Verge/Shadowrocket 配置、测速验收并安全禁用 root 密码登录。也适用于已有自建节点的巡检、连接排障、伪装域名测速及按需增加 Shadowsocks/WireGuard 备用；不用于购买服务器、网站部署或平台账号防封承诺。
+description: 从拿到 VPS 的 IP、SSH 端口和 root 密码开始，建立专用 SSH 密钥、部署私有 REALITY 节点、生成 Clash Verge/Shadowrocket 配置、测速验收并安全禁用 root 密码登录。也适用于在现有 Clash/Mihomo 配置中合并国内外分流、已有节点巡检、连接排障、伪装域名测速及按需增加 Shadowsocks/WireGuard 备用；不用于购买服务器、网站部署或平台账号防封承诺。
 ---
 
 # VPS 私有节点工作流
 
 起点：用户已经买好 VPS，拿到主机地址、SSH 端口和 root 密码。终点：用户设备真实连通、能够使用专用 SSH 密钥管理服务器，配置可恢复，交付记录不泄露凭据。
+
+本工作流不依赖特定 Agent。具备所需文件、终端和用户授权的 Agent 可直接读取本文件，再按任务读取引用资料；没有原生 Skill 机制也可按此执行。
 
 本技能默认适配 Ubuntu 24.04 + systemd；其他发行版先检查包管理器、服务名和防火墙，再调整命令。遵循用户已经指定的系统、协议和客户端。默认主用 VLESS + REALITY + Vision，不要求安装面板或购买域名。Shadowsocks、WireGuard、Trojan 均按实际需要选择，不强制全部部署。
 
@@ -19,7 +21,7 @@ description: 从拿到 VPS 的 IP、SSH 端口和 root 密码开始，建立专�
 | root 初始密码或已可用的密钥 | 首次登录；不要把密码写进技能、日志、命令参数或回复 |
 | 可核验的 SSH 主机指纹 | 首次信任；来自控制台等可信独立渠道 |
 | 设备和客户端 | 例如 Mac Clash Verge Rev、iPhone Shadowrocket |
-| 本次模式 | 新建部署、已有节点巡检、连接排障、域名测速、SSH 加固 |
+| 本次模式 | 新建部署、客户端分流、已有节点巡检、连接排障、域名测速、SSH 加固 |
 
 用户让你“检查”或“测速”时只读执行；“搭建”覆盖所需的软件和节点配置，但不自动覆盖已有服务、轮换凭据、修改系统地区/时区或购买资源。用户已明确授权的步骤连续完成，不重复索取确认。已有配置与目标冲突时先形成具体迁移/回退方案，再解决必要的范围问题。
 
@@ -30,6 +32,7 @@ description: 从拿到 VPS 的 IP、SSH 端口和 root 密码开始，建立专�
 - 首次密码登录、生成/安装公钥、关闭 root 密码登录：读 [references/ssh-access.md](references/ssh-access.md)。
 - 新建 REALITY、固定官方安装包、systemd 和防火墙：读 [references/deploy-reality.md](references/deploy-reality.md)。
 - 用户确实需要其他协议时：读 [references/backup-protocols.md](references/backup-protocols.md)。
+- 在当前 Clash Verge/Mihomo 配置中加入国内直连、国外代理：读 [references/clash-split-routing.md](references/clash-split-routing.md)，使用 [assets/clash-split-routing.yaml](assets/clash-split-routing.yaml) 合并；仅配置分流时不执行 VPS 部署或 SSH 加固。
 - 客户端实际验收、运行状态、测速及故障定位：读 [references/verify-and-diagnose.md](references/verify-and-diagnose.md)。
 
 不要每次加载全部参考资料。已有服务先检查并复用，不重复运行首次安装流程。
@@ -40,7 +43,7 @@ description: 从拿到 VPS 的 IP、SSH 端口和 root 密码开始，建立专�
 2. **确定节点参数。** 使用空闲 TCP 端口；8443 或 443 都可以，不因端口不同重建正常节点。选择兼容 TLS 1.3/H2、从 VPS 可达且稳定的 REALITY 握手域名，客户端 SNI 与服务端参数一致。需要测速再运行下面的脚本；微小差异不构成必须切换的理由。
 3. **部署最小主节点。** 从官方发布源选择当前兼容的固定 sing-box 版本，核对与该资产对应的摘要。生成新的随机凭据，配置验证成功后启动隔离服务，只开放需要的端口。检测到已有配置、用户、密钥或服务名时停止覆盖，转入审计/迁移。
 4. **按需补充备用。** 可复用现有 SS/WireGuard；不因为文章里有 Trojan 就自动添加。同机、同 IP 的多种协议无法替代另一条故障独立的线路。
-5. **生成并导入客户端。** 使用下述生成器产出私有文件并核对参数。已有 Mihomo 时先做配置校验和独立临时测试，再确认实际应用选中了正确配置与节点；只用 Shadowrocket 时直接在该客户端完成导入和真实出口/HTTPS验收，不强制另装内核。Clash 会复制导入文件，更新原件不会自动更新应用里的副本。
+5. **生成或合并客户端配置。** 新部署使用下述生成器产出私有文件并核对参数；用户要国内直连、国外代理时，按分流参考资料合并模板。已有配置以应用当前选中的配置及其规则扩展为准，保留节点、凭据、代理组、端口、DNS、TUN、IPv6 与当前节点选择，只改所需分流项，不用整份模板替换。已有 Mihomo 时先做配置校验和独立临时测试，再确认实际应用选中了正确配置与节点；只用 Shadowrocket 时按其格式配置和验收，不直接导入 Mihomo 的 MRS 模板，也不强制另装内核。Clash 会复制导入文件，更新原件不会自动更新应用里的副本。
 6. **完成真实验收。** 记录本机 → VPS、VPS → 目标、节点出口、DNS/UDP、客户端实际路由；只对已测试的设备和流量范围作结论。TUN、系统代理和应用单独配置的代理是不同入口。
 7. **安全关闭 root 的 SSH 密码认证。** 密钥已通过独立登录测试后执行；保留原连接、配置备份和临时自动回退。校验、reload、新密钥连接和禁用公钥的反向测试全部通过后，取消回退。新建私人服务器应在交付前完成此步骤；已有服务器的巡检不自动修改 SSH。
 8. **交付与复用。** 给出管理命令、主/备用节点、实际验证结果、续费/恢复所需位置和未验证项；更新部署记录。不把私钥或完整导入链接贴到普通输出。
@@ -66,6 +69,8 @@ python3 scripts/build_reality_clients.py --material material.json --out client -
 ```
 
 从技能目录运行，或将脚本改为其绝对路径。生成 Clash 配置、Shadowrocket 导入链接和独立测试配置；可用 `--qr` 在已安装 qrcode 时生成二维码。默认拒绝覆盖，只有明确需要更新并已备份时才用 `--overwrite`。生成文件含访问凭据，不能公开。
+
+生成器保持最小的 `MATCH,PROXY` 配置，不自动附加国内外分流。需要分流时，在生成的 Clash 配置或用户现用配置中按 [分流合并流程](references/clash-split-routing.md) 添加模板；独立节点诊断配置继续用于单独验证节点。
 
 ## 凭据与验收规则
 
