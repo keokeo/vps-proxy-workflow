@@ -1,0 +1,35 @@
+# Local deployment material and generated client artifacts
+client/
+clients/
+private/
+deployments/
+backups/
+outputs/
+material.json
+*-material.json
+metadata.json
+*-credentials.json
+credentials.json
+*.key
+*.pem
+*.p12
+*.pfx
+id_ed25519*
+id_rsa*
+wireguard.conf
+shadowrocket-*.txt
+shadowrocket-*.png
+clash-verge*.yaml
+mihomo-*.yaml
+*.log
+.env
+.env.*
+
+# Local tool state
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage

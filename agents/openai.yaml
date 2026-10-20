@@ -1,0 +1,4 @@
+interface:
+  display_name: "VPS 私有节点搭建"
+  short_description: "从 root 密码开始，完成密钥登录、REALITY 节点部署与客户端验收"
+  default_prompt: "使用 $vps-proxy-workflow，从拿到 VPS 的 root 密码开始，帮我完成私有节点搭建、客户端配置与 SSH 公钥加固。"
